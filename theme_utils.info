@@ -1,0 +1,5 @@
+name = Theme Utils
+description = A set of utilities to make theming a bit easier.
+dependencies[] = ctools
+package = Other
+core = 7.x

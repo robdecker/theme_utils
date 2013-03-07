@@ -1,0 +1,104 @@
+<?php
+/**
+ * @file
+ * Primary module file.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function theme_utils_help($path, $arg) {
+  switch ($path) {
+    case 'admin/config/user-interface/theme_utils':
+      return '<p>' . t('Select the options below that you want enabled.') . '</p>';
+
+    case 'admin/help#theme_utils':
+      $output = '';
+      $output .= '<p>' . t('Various utilities that theming a bit easier.') . '</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function theme_utils_menu() {
+  $items['admin/config/user-interface/theme_utils'] = array(
+    'title' => 'Theme Utils',
+    'description' => 'Configure settings for Theme Utils.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('theme_utils_settings'),
+    'access arguments' => array('administer site configuration'),
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_preprocess_HOOK().
+ *
+ * Extend block's HTML classes with the block's title.
+ */
+function theme_utils_preprocess_block(&$vars) {
+  if ($setting = variable_get('theme_utils_block_title_class', 1)) {
+    ctools_include('cleanstring', 'ctools', 'includes');
+
+    $block = $vars['block'];
+
+    // Use the block's title/subject if available,
+    // otherwise use the delta value.
+    if (strlen($block->subject) > 0) {
+      $title = $block->subject;
+    }
+    else {
+      $title = $block->delta;
+    }
+
+    // Remove any non-alphanumeric characters from title
+    // and replace whitespace with hyphens.
+    $title = ctools_cleanstring($title, array('lower case' => TRUE));
+
+    // Add the block's module to the beginning of the class.
+    $module = 'block-' . $block->module;
+
+    $class[] = $module . '-' . $title;
+    $vars['classes_array'] = array_merge($vars['classes_array'], $class);
+  }
+}
+
+/**
+ * Implementation of hook_preprocess_HOOK().
+ *
+ * Extend body's HTML classes with regions in use on a given page.
+ */
+function theme_utils_preprocess_html(&$vars) {
+  if ($setting = variable_get('theme_utils_region_body_class', 1)) {
+    if (isset($vars['page'])) {
+      foreach ($vars['page'] as $region) {
+        if (is_array($region) && isset($region['#region'])) {
+          $vars['classes_array'][] = 'with-' . $region['#region'];
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Form builder function for module settings.
+ */
+function theme_utils_settings() {
+  $form['theme_utils_block_title_class'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Block title to class'),
+    '#default_value' => variable_get('theme_utils_block_title_class', 1),
+    '#description' => t('Adds the block\'s title to the block\'s set of HTML classes. Useful when theming to quickly identify and target individual blocks.'),
+  );
+  $form['theme_utils_region_body_class'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Regions to body class'),
+    '#default_value' => variable_get('theme_utils_region_body_class', 1),
+    '#description' => t('Adds the page\'s active regions to the body element\'s list of HTML classes.'),
+  );
+
+  return system_settings_form($form);
+}

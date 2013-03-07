@@ -1,0 +1,15 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the Theme Utils module.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function theme_utils_uninstall() {
+  // Delete variables.
+  variable_del('admin_menu_devel_modules');
+  variable_del('admin_menu_devel_modules_enabled');
+}
