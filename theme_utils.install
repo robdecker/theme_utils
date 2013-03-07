@@ -10,6 +10,6 @@
  */
 function theme_utils_uninstall() {
   // Delete variables.
-  variable_del('admin_menu_devel_modules');
-  variable_del('admin_menu_devel_modules_enabled');
+  variable_del('theme_utils_block_title_class');
+  variable_del('theme_utils_region_body_class');
 }
