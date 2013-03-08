@@ -12,4 +12,6 @@ function theme_utils_uninstall() {
   // Delete variables.
   variable_del('theme_utils_block_title_class');
   variable_del('theme_utils_region_body_class');
+  variable_del('theme_utils_media_query');
+  variable_del('theme_utils_viewport_dimensions');
 }
