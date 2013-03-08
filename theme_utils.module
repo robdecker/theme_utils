@@ -50,11 +50,19 @@ function theme_utils_settings() {
     '#default_value' => variable_get('theme_utils_region_body_class', 1),
     '#description' => t('Adds the page\'s active regions to the body element\'s list of HTML classes.'),
   );
+  // Verify the library is installed.
+  $disabled = FALSE;
+  $extra_description = '';
+  if (!file_exists(__DIR__ . '/php-css-parser/lib/Sabberworm/CSS/Parser.php')) {
+    $disabled = TRUE;
+    $extra_description = t('Required library not found. PHP-CSS-Parser is either not installed or is incorrectly installed.');
+  }
   $form['theme_utils_media_query'] = array(
     '#type' => 'checkbox',
+    '#disabled' => $disabled ? 1 : 0,
     '#title' => t('Display @media query'),
-    '#default_value' => variable_get('theme_utils_media_query', 1),
-    '#description' => t('Displays the active @media query in the browser window.'),
+    '#default_value' => variable_get('theme_utils_media_query', !$disabled),
+    '#description' => t('Displays the active @media query in the browser window.') . '<br>' . $extra_description,
   );
   $form['theme_utils_viewport_dimensions'] = array(
     '#type' => 'checkbox',
@@ -125,7 +133,7 @@ function theme_utils_page_build(&$page) {
   $should_attach = FALSE;
 
   if (variable_get('theme_utils_media_query', 1)) {
-    $media_queries = theme_utils_get_media_queries();
+    if ($media_queries = theme_utils_get_media_queries()) {
     $css = '';
     $js = '';
     foreach ($media_queries as $idx => $query) {
@@ -144,6 +152,7 @@ function theme_utils_page_build(&$page) {
     // Inject inline css into page.
     drupal_add_css($css, array('type' => 'inline', 'weight' => '9999'));
     $should_attach = TRUE;
+    }
   }
 
   if (variable_get('theme_utils_viewport_dimensions', 1)) {
@@ -173,6 +182,9 @@ function theme_utils_get_media_queries() {
     $media_queries = $cache->data;
   }
   else {
+    if (!file_exists(__DIR__ . '/php-css-parser/lib/Sabberworm/CSS/Parser.php')) {
+      return FALSE;
+    }
     // Get all css files from page.
     $css_files = theme_utils_get_css_files();
     require_once 'php-css-parser/lib/Sabberworm/CSS/Parser.php';
