@@ -42,13 +42,13 @@ function theme_utils_settings() {
     '#type' => 'checkbox',
     '#title' => t('Block title to class'),
     '#default_value' => variable_get('theme_utils_block_title_class', 1),
-    '#description' => t('Adds the block\'s title to the block\'s set of HTML classes. Useful when theming to quickly identify and target individual blocks.'),
+    '#description' => t("Adds the block's title to the block's set of HTML classes. Useful when theming to quickly identify and target individual blocks."),
   );
   $form['theme_utils_region_body_class'] = array(
     '#type' => 'checkbox',
     '#title' => t('Regions to body class'),
     '#default_value' => variable_get('theme_utils_region_body_class', 1),
-    '#description' => t('Adds the page\'s active regions to the body element\'s list of HTML classes.'),
+    '#description' => t("Adds the page's active regions to the body element's list of HTML classes."),
   );
   // Verify the library is installed.
   $disabled = FALSE;
@@ -62,20 +62,20 @@ function theme_utils_settings() {
     '#disabled' => $disabled ? 1 : 0,
     '#title' => t('Display @media query'),
     '#default_value' => variable_get('theme_utils_media_query', !$disabled),
-    '#description' => t('Displays the active @media query in the browser window.') . '<br>' . $extra_description,
+    '#description' => t('Displays the active @media query in the browser window.') . '<br />' . $extra_description,
   );
   $form['theme_utils_viewport_dimensions'] = array(
     '#type' => 'checkbox',
     '#title' => t('Display viewport dimensions'),
     '#default_value' => variable_get('theme_utils_viewport_dimensions', 1),
-    '#description' => t('Displays the viewport\'s dimensions in the browser window.'),
+    '#description' => t("Displays the viewport's dimensions in the browser window."),
   );
 
   return system_settings_form($form);
 }
 
 /**
- * Implementation of hook_preprocess_HOOK().
+ * Implements hook_preprocess_HOOK().
  *
  * Extend block's HTML classes with the block's title.
  */
@@ -107,7 +107,7 @@ function theme_utils_preprocess_block(&$vars) {
 }
 
 /**
- * Implementation of hook_preprocess_HOOK().
+ * Implements hook_preprocess_HOOK().
  *
  * Extend body's HTML classes with regions in use on a given page.
  */
@@ -124,7 +124,7 @@ function theme_utils_preprocess_html(&$vars) {
 }
 
 /**
- * Implementation of hook_page_build().
+ * Implements hook_page_build().
  *
  * Show the media query and/or the browser viewport dimensions.
  */
@@ -134,24 +134,24 @@ function theme_utils_page_build(&$page) {
 
   if (variable_get('theme_utils_media_query', 1)) {
     if ($media_queries = theme_utils_get_media_queries()) {
-    $css = '';
-    $js = '';
-    foreach ($media_queries as $idx => $query) {
-      $css .= '@media ' . $query . ' { ';
-      $css .= ' #theme-utils-media-query .query-' . $idx . ' { ';
-      $css .= '  display: block; ';
-      $css .= ' } ';
-      $css .= '} ';
+      $css = '';
+      $js = '';
+      foreach ($media_queries as $idx => $query) {
+        $css .= '@media ' . $query . ' { ';
+        $css .= ' #theme-utils-media-query .query-' . $idx . ' { ';
+        $css .= '  display: block; ';
+        $css .= ' } ';
+        $css .= '} ';
 
-      $setting['themeUtils']['mediaQueries'][] = array(
-        'itemNum' => $idx,
-        'query' => $query,
-      );
-    }
+        $setting['themeUtils']['mediaQueries'][] = array(
+          'itemNum' => $idx,
+          'query' => $query,
+        );
+      }
 
-    // Inject inline css into page.
-    drupal_add_css($css, array('type' => 'inline', 'weight' => '9999'));
-    $should_attach = TRUE;
+      // Inject inline css into page.
+      drupal_add_css($css, array('type' => 'inline', 'weight' => '9999'));
+      $should_attach = TRUE;
     }
   }
 
@@ -204,7 +204,7 @@ function theme_utils_get_media_queries() {
     }
 
     // Store for 1 hour.
-    cache_set($cid, $media_queries, 'cache', time() + 60*60);
+    cache_set($cid, $media_queries, 'cache', time() + (60 * 60));
   }
 
   return $media_queries;
