@@ -7,11 +7,12 @@ Drupal.behaviors.themeUtils = {
 
     // Browser viewport
     if (settings.themeUtils.browserViewport && settings.themeUtils.browserViewport.show == 'true') {
-      $('#theme-utils').append('<div id="theme-utils-browser-viewport" class="tubox" title="Click to hide"></div>');
+      $('#theme-utils').append('<div id="theme-utils-browser-viewport" class="theme-utils-box" title="Click to hide"></div>');
 
+      // Calculate the browser width.
       function showWidth() {
         var widthPx = $(window).width();
-        var widthEm = widthPx / 16;
+        var widthEm = widthPx / settings.themeUtils.baseFontSize.size;
         $('#theme-utils-browser-viewport').html(widthPx + 'px / ' + widthEm + 'em');
       }
       showWidth();
@@ -20,6 +21,7 @@ Drupal.behaviors.themeUtils = {
         showWidth();
       });
 
+      // Hide the viewport indicator by clicking on it.
       $('#theme-utils-browser-viewport').click(function() {
         $(this).fadeOut(500);
       });
@@ -27,13 +29,14 @@ Drupal.behaviors.themeUtils = {
 
     // Media queries
     if ($(settings.themeUtils.mediaQueries).length) {
-      $('#theme-utils').append('<div id="theme-utils-media-query" class="tubox" title="Click to hide"></div>');
+      $('#theme-utils').append('<div id="theme-utils-media-query" class="theme-utils-box" title="Click to hide"></div>');
 
       $.each(settings.themeUtils.mediaQueries, function(idx, item) {
         var query = '<div class="query query-' + item.itemNum + '">' + item.query + '</div>';
         $('#theme-utils-media-query').append(query);
       });
 
+      // Hide the media query indicator by clicking on it.
       $('#theme-utils-media-query').click(function() {
         $(this).fadeOut(500);
       });

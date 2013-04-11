@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Primary module file.
+ * A set of utilities to make theming a bit easier.
  */
 
 /**
@@ -14,7 +14,7 @@ function theme_utils_help($path, $arg) {
 
     case 'admin/help#theme_utils':
       $output = '';
-      $output .= '<p>' . t('Various utilities that theming a bit easier.') . '</p>';
+      $output .= '<p>' . t('Various utilities that make theming a bit easier.') . '</p>';
       return $output;
   }
 }
@@ -44,18 +44,24 @@ function theme_utils_settings() {
     '#default_value' => variable_get('theme_utils_block_title_class', 1),
     '#description' => t("Adds the block's title to the block's set of HTML classes. Useful when theming to quickly identify and target individual blocks."),
   );
+
   $form['theme_utils_region_body_class'] = array(
     '#type' => 'checkbox',
     '#title' => t('Regions to body class'),
     '#default_value' => variable_get('theme_utils_region_body_class', 1),
     '#description' => t("Adds the page's active regions to the body element's list of HTML classes."),
   );
-  // Verify the library is installed.
+
+  // Verify that namespaces are supported & that the library is installed.
   $disabled = FALSE;
   $extra_description = '';
-  if (!file_exists(__DIR__ . '/php-css-parser/lib/Sabberworm/CSS/Parser.php')) {
+  if (!theme_utils_namespaces_supported()) {
     $disabled = TRUE;
-    $extra_description = t('Required library not found. PHP-CSS-Parser is either not installed or is incorrectly installed.');
+    $extra_description = t('PHP version 5.3.0 is required. This server is using ' . phpversion());
+  }
+  elseif (!theme_utils_css_parser_installed()) {
+    $disabled = TRUE;
+    $extra_description = t('Required library not found. PHP-CSS-Parser is either not installed or is incorrectly installed. Please see the README.txt file for installation instructions.');
   }
   $form['theme_utils_media_query'] = array(
     '#type' => 'checkbox',
@@ -64,11 +70,21 @@ function theme_utils_settings() {
     '#default_value' => variable_get('theme_utils_media_query', !$disabled),
     '#description' => t('Displays the active @media query in the browser window.') . '<br />' . $extra_description,
   );
+
   $form['theme_utils_viewport_dimensions'] = array(
     '#type' => 'checkbox',
     '#title' => t('Display viewport dimensions'),
     '#default_value' => variable_get('theme_utils_viewport_dimensions', 1),
     '#description' => t("Displays the viewport's dimensions in the browser window."),
+  );
+  $form['theme_utils_base_font_size'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Base font size'),
+    '#default_value' => variable_get('theme_utils_base_font_size', "16"),
+    '#description' => t("Set to the base font size of your theme for proper viewport calculations."),
+    '#maxlength' => 15,
+    '#size' => 10,
+    '#element_validate' => array('_theme_utils_settings_is_numeric'),
   );
 
   return system_settings_form($form);
@@ -132,10 +148,13 @@ function theme_utils_page_build(&$page) {
   $setting = array();
   $should_attach = FALSE;
 
+  // Media queries.
   if (variable_get('theme_utils_media_query', 1)) {
     if ($media_queries = theme_utils_get_media_queries()) {
       $css = '';
       $js = '';
+      // Parse through each CSS file for the current page,
+      // and extract all media queries.
       foreach ($media_queries as $idx => $query) {
         $css .= '@media ' . $query . ' { ';
         $css .= ' #theme-utils-media-query .query-' . $idx . ' { ';
@@ -155,13 +174,19 @@ function theme_utils_page_build(&$page) {
     }
   }
 
+  // Viewport dimensions.
   if (variable_get('theme_utils_viewport_dimensions', 1)) {
     $setting['themeUtils']['browserViewport'] = array(
       'show' => 'true',
     );
+    $setting['themeUtils']['baseFontSize'] = array(
+      'size' => variable_get('theme_utils_base_font_size', "16"),
+    );
     $should_attach = TRUE;
   }
 
+  // Only inject css/js if media queries and/or viewport dimensions should be
+  // displayed.
   if ($should_attach) {
     $path = drupal_get_path('module', 'theme_utils');
     drupal_add_js($setting, 'setting');
@@ -174,40 +199,46 @@ function theme_utils_page_build(&$page) {
  * Get all media queries from all stylesheets attached to the page.
  */
 function theme_utils_get_media_queries() {
-  $media_queries = array();
+  // the css parser uses namespaces, which requires php 5.3.0 or higher
+  if (theme_utils_namespaces_supported()) {
+    $media_queries = array();
 
-  // Use cache since scanning every css file is time consuming.
-  $cid = 'theme_utils_media_queries/' . current_path();
-  if ($cache = cache_get($cid, 'cache')) {
-    $media_queries = $cache->data;
-  }
-  else {
-    if (!file_exists(__DIR__ . '/php-css-parser/lib/Sabberworm/CSS/Parser.php')) {
-      return FALSE;
+    // Use cache since scanning every css file is time consuming.
+    $cid = 'theme_utils_media_queries/' . current_path();
+    if ($cache = cache_get($cid, 'cache')) {
+      $media_queries = $cache->data;
     }
-    // Get all css files from page.
-    $css_files = theme_utils_get_css_files();
-    require_once 'php-css-parser/lib/Sabberworm/CSS/Parser.php';
+    else {
+      if (!theme_utils_css_parser_installed()) {
+        return FALSE;
+      }
+      // Get all css files from page.
+      $css_files = theme_utils_get_css_files();
+      require_once 'php-css-parser/lib/Sabberworm/CSS/Parser.php';
 
-    foreach ($css_files as $file) {
-      // Load each css file in parser.
-      $parser = new Sabberworm\CSS\Parser(file_get_contents(DRUPAL_ROOT . '/' . $file['data']));
-      $doc = $parser->parse();
-      $contents = $doc->getContents();
+      foreach ($css_files as $file) {
+        // Load each css file in parser.
+        $parser = new Sabberworm\CSS\Parser(file_get_contents(DRUPAL_ROOT . '/' . $file['data']));
+        $doc = $parser->parse();
+        $contents = $doc->getContents();
 
-      foreach ($contents as $key => $value) {
-        // Only want @media queries.
-        if ($value instanceof Sabberworm\CSS\CSSList\MediaQuery) {
-          $media_queries[] = $value->getQuery();
+        foreach ($contents as $key => $value) {
+          // Only want @media queries.
+          if ($value instanceof Sabberworm\CSS\CSSList\MediaQuery) {
+            $media_queries[] = $value->getQuery();
+          }
         }
       }
+
+      // Store for 1 hour.
+      cache_set($cid, $media_queries, 'cache', time() + (60 * 60));
     }
 
-    // Store for 1 hour.
-    cache_set($cid, $media_queries, 'cache', time() + (60 * 60));
+    return $media_queries;
   }
-
-  return $media_queries;
+  else {
+    return FALSE;
+  }
 }
 
 /**
@@ -236,6 +267,38 @@ function theme_utils_get_css_files() {
   return $css;
 }
 
+/**
+ * Verify that the CSS Parser library is installed in the proper location.
+ */
+function theme_utils_css_parser_installed() {
+  if (file_exists(__DIR__ . '/php-css-parser/lib/Sabberworm/CSS/Parser.php')) {
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Check if php namespaces are supported.
+ */
+function theme_utils_namespaces_supported() {
+  if (strnatcmp(phpversion(),'5.3.0') >= 0) {
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Validation function to verify the user supplied value is numeric.
+ */
+function _theme_utils_settings_is_numeric($element, &$form_state) {
+  if (empty($element['#value']) || !is_numeric($element['#value'])) {
+    form_error($element, t('The "@name" textbox must contain a numeric value.', array('@name' => t($element['#title']))));
+  }
+}
 /**
  * Autoload PHP-CSS-Parser classes.
  */
