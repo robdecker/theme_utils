@@ -57,7 +57,7 @@ function theme_utils_settings() {
   $extra_description = '';
   if (!theme_utils_namespaces_supported()) {
     $disabled = TRUE;
-    $extra_description = t('PHP version 5.3.0 is required. This server is using ' . phpversion());
+    $extra_description = t('PHP version 5.3.0 is required. This server is using ') . phpversion();
   }
   elseif (!theme_utils_css_parser_installed()) {
     $disabled = TRUE;
@@ -199,7 +199,7 @@ function theme_utils_page_build(&$page) {
  * Get all media queries from all stylesheets attached to the page.
  */
 function theme_utils_get_media_queries() {
-  // the css parser uses namespaces, which requires php 5.3.0 or higher
+  // The css parser uses namespaces, which requires php 5.3.0 or higher.
   if (theme_utils_namespaces_supported()) {
     $media_queries = array();
 
@@ -283,7 +283,7 @@ function theme_utils_css_parser_installed() {
  * Check if php namespaces are supported.
  */
 function theme_utils_namespaces_supported() {
-  if (strnatcmp(phpversion(),'5.3.0') >= 0) {
+  if (strnatcmp(phpversion(), '5.3.0') >= 0) {
     return TRUE;
   }
   else {
