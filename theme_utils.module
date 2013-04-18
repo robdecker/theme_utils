@@ -35,6 +35,23 @@ function theme_utils_menu() {
 }
 
 /**
+ * Implements hook_libraries_info().
+ */
+function theme_utils_libraries_info() {
+  return array(
+    'php-css-parser' => array(
+      'name' => 'My test library',
+      'vendor url' => 'http://www.example.com',
+      'download url' => 'http://github.com/example/my-php-api',
+      'version' => '1.0',
+      'xautoload' => function($api) {
+        $api->namespaceRoot('Sabberworm\CSS', 'lib');
+      },
+    ),
+  );
+}
+
+/**
  * Form builder function for module settings.
  */
 function theme_utils_settings() {
@@ -54,21 +71,16 @@ function theme_utils_settings() {
 
   // Verify that namespaces are supported & that the library is installed.
   $disabled = FALSE;
-  $extra_description = '';
-  if (!theme_utils_namespaces_supported()) {
+  $error_msg = theme_utils_media_query_supported();
+  if ($error_msg !== '') {
     $disabled = TRUE;
-    $extra_description = t('PHP version 5.3.0 is required. This server is using ') . phpversion();
-  }
-  elseif (!theme_utils_css_parser_installed()) {
-    $disabled = TRUE;
-    $extra_description = t('Required library not found. PHP-CSS-Parser is either not installed or is incorrectly installed. Please see the README.txt file for installation instructions.');
   }
   $form['theme_utils_media_query'] = array(
     '#type' => 'checkbox',
     '#disabled' => $disabled ? 1 : 0,
     '#title' => t('Display @media query'),
     '#default_value' => variable_get('theme_utils_media_query', !$disabled),
-    '#description' => t('Displays the active @media query in the browser window.') . '<br />' . $extra_description,
+    '#description' => t('Displays the active @media query in the browser window.') . '<br />' . $error_msg,
   );
 
   $form['theme_utils_viewport_dimensions'] = array(
@@ -77,6 +89,7 @@ function theme_utils_settings() {
     '#default_value' => variable_get('theme_utils_viewport_dimensions', 1),
     '#description' => t("Displays the viewport's dimensions in the browser window."),
   );
+
   $form['theme_utils_base_font_size'] = array(
     '#type' => 'textfield',
     '#title' => t('Base font size'),
@@ -84,7 +97,8 @@ function theme_utils_settings() {
     '#description' => t("Set to the base font size of your theme for proper viewport calculations."),
     '#maxlength' => 15,
     '#size' => 10,
-    '#element_validate' => array('_theme_utils_settings_is_numeric'),
+    '#required' => TRUE,
+    '#element_validate' => array('element_validate_number'),
   );
 
   return system_settings_form($form);
@@ -200,7 +214,7 @@ function theme_utils_page_build(&$page) {
  */
 function theme_utils_get_media_queries() {
   // The css parser uses namespaces, which requires php 5.3.0 or higher.
-  if (theme_utils_namespaces_supported()) {
+  if (theme_utils_media_query_supported() == '') {
     $media_queries = array();
 
     // Use cache since scanning every css file is time consuming.
@@ -209,23 +223,22 @@ function theme_utils_get_media_queries() {
       $media_queries = $cache->data;
     }
     else {
-      if (!theme_utils_css_parser_installed()) {
-        return FALSE;
-      }
-      // Get all css files from page.
+      // Get all css files from current page.
       $css_files = theme_utils_get_css_files();
-      require_once 'php-css-parser/lib/Sabberworm/CSS/Parser.php';
 
       foreach ($css_files as $file) {
         // Load each css file in parser.
-        $parser = new Sabberworm\CSS\Parser(file_get_contents(DRUPAL_ROOT . '/' . $file['data']));
-        $doc = $parser->parse();
-        $contents = $doc->getContents();
+        if (class_exists('Sabberworm\CSS\Parser')) {
+          // Parser is autoloaded.
+          $parser = new Sabberworm\CSS\Parser(file_get_contents(DRUPAL_ROOT . '/' . $file['data']));
+          $doc = $parser->parse();
+          $contents = $doc->getContents();
 
-        foreach ($contents as $key => $value) {
-          // Only want @media queries.
-          if ($value instanceof Sabberworm\CSS\CSSList\MediaQuery) {
-            $media_queries[] = $value->getQuery();
+          foreach ($contents as $key => $value) {
+            // Only want @media queries.
+            if ($value instanceof Sabberworm\CSS\CSSList\MediaQuery) {
+              $media_queries[] = $value->getQuery();
+            }
           }
         }
       }
@@ -268,44 +281,33 @@ function theme_utils_get_css_files() {
 }
 
 /**
- * Verify that the CSS Parser library is installed in the proper location.
+ * Verify that the @media query requirements are met.
  */
-function theme_utils_css_parser_installed() {
-  if (file_exists(__DIR__ . '/php-css-parser/lib/Sabberworm/CSS/Parser.php')) {
-    return TRUE;
+function theme_utils_media_query_supported() {
+  $error_msg = '';
+
+  // Check if php namespaces are supported.
+  if (strnatcmp(phpversion(), '5.3.0') < 0) {
+    $error_msg .= t('PHP version 5.3.0 is required. This server is using ') . phpversion();
   }
   else {
-    return FALSE;
-  }
-}
+    // Verify Library API is installed/enabled.
+    if (module_exists('libraries')) {
+      // Verify parser is in correct location.
+      $library_path = libraries_get_path('php-css-parser');
+      if (!$library_path) {
+        $error_msg .= t('Required library not found. PHP-CSS-Parser is either not installed or is installed incorrectly. Please see the README.txt file for installation instructions. ');
+      }
+    }
+    else {
+      $error_msg .= t('<a href="@libraries-module">Libraries API</a> module is required. ', array('@libraries-module' => 'http://drupal.org/project/libraries'));
+    }
 
-/**
- * Check if php namespaces are supported.
- */
-function theme_utils_namespaces_supported() {
-  if (strnatcmp(phpversion(), '5.3.0') >= 0) {
-    return TRUE;
+    // Verify X Autoload is installed/enabled.
+    if (!module_exists('xautoload')) {
+      $error_msg .= t('<a href="@xautoload-module">X Autoload</a> module is required. ', array('@xautoload-module' => 'http://drupal.org/project/xautoload'));
+    }
   }
-  else {
-    return FALSE;
-  }
-}
 
-/**
- * Validation function to verify the user supplied value is numeric.
- */
-function _theme_utils_settings_is_numeric($element, &$form_state) {
-  if (empty($element['#value']) || !is_numeric($element['#value'])) {
-    form_error($element, t('The "@name" textbox must contain a numeric value.', array('@name' => t($element['#title']))));
-  }
+  return $error_msg;
 }
-/**
- * Autoload PHP-CSS-Parser classes.
- */
-spl_autoload_register(function($class) {
-  $file = __DIR__ . '/php-css-parser/lib/' . strtr($class, '\\', '/') . '.php';
-  if (file_exists($file)) {
-    require $file;
-    return TRUE;
-  }
-});

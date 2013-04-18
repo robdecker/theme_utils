@@ -3,11 +3,13 @@
 Drupal.behaviors.themeUtils = {
   attach: function (context, settings) {
 
+    var hoverText = Drupal.t('Click to hide');
+
     $('body').append('<div id="theme-utils" />');
 
     // Browser viewport
     if (settings.themeUtils.browserViewport && settings.themeUtils.browserViewport.show == 'true') {
-      $('#theme-utils').append('<div id="theme-utils-browser-viewport" class="theme-utils-box" title="Click to hide"></div>');
+      $('#theme-utils').append('<div id="theme-utils-browser-viewport" class="theme-utils-box" title="' + hoverText + '"></div>');
 
       // Calculate the browser width.
       function showWidth() {
@@ -29,7 +31,7 @@ Drupal.behaviors.themeUtils = {
 
     // Media queries
     if ($(settings.themeUtils.mediaQueries).length) {
-      $('#theme-utils').append('<div id="theme-utils-media-query" class="theme-utils-box" title="Click to hide"></div>');
+      $('#theme-utils').append('<div id="theme-utils-media-query" class="theme-utils-box" title="' + hoverText + '"></div>');
 
       $.each(settings.themeUtils.mediaQueries, function(idx, item) {
         var query = '<div class="query query-' + item.itemNum + '">' + item.query + '</div>';

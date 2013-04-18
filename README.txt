@@ -15,21 +15,31 @@ A set of utilities to make theming a bit easier. Current features:
 Requirements
 ------------
 Chaos Tools (ctools)
+Libraries API (libraries) *
+X Autoload (xautoload) *
+PHP 5.3.0 *
 
+* (optional - required only for displaying @media queries)
 
 Installation
 ------------
-1. Install and activate Theme Utils like every other Drupal module.
-2. Download version 3.0.0 of PHP-CSS-Parser from the GitHub repo.
+1. Install and enable Theme Utils like every other Drupal module.
+2. Configure enabled utilities at admin/config/user-interface/theme_utils
+
+(Optional) If you want to display @media queries:
+1. Install Libraries API & X Autoload.
+2. Create a directory called 'php-css-parser' in the libraries directory. This
+   typically resides at 'sites/all/libraries'. So, after creating the directory,
+   you should have 'sites/all/libraries/php-css-parser'.
+3. Download version 3.0.0 of PHP-CSS-Parser from the GitHub repo.
    https://github.com/sabberworm/PHP-CSS-Parser (Go to the Tags tab to get the
    link to the 3.0.0 zip file).
-3. Create a directory called 'php-css-parser' inside of this module directory.
-4. Extract all files from the zip archive into this new directory.
+4. Extract all files from the zip archive into the 'php-css-parser' directory
+   that was created on step 2.
 5. Verify that 'Parser.php' is in the following directory:
-   [this_module_directory]/php-css-parser/lib/Sabberworm/CSS/ so, for most
+   [libraries_directory]/php-css-parser/lib/Sabberworm/CSS so, for most
    installations, this will be
-   sites/all/modules/theme_utils/php-css-parser/lib/Sabberworm/CSS
-6. Configure enabled utilities at admin/config/user-interface/theme_utils
+   sites/all/libraries/php-css-parser/lib/Sabberworm/CSS
 
 
 Author
