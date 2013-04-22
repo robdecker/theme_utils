@@ -40,10 +40,10 @@ function theme_utils_menu() {
 function theme_utils_libraries_info() {
   return array(
     'php-css-parser' => array(
-      'name' => 'My test library',
-      'vendor url' => 'http://www.example.com',
-      'download url' => 'http://github.com/example/my-php-api',
-      'version' => '1.0',
+      'name' => 'PHP CSS Parser',
+      'vendor url' => 'https://github.com/sabberworm/PHP-CSS-Parser',
+      'download url' => 'https://github.com/sabberworm/PHP-CSS-Parser/tags',
+      'version' => '3.0.0',
       'xautoload' => function($api) {
         $api->namespaceRoot('Sabberworm\CSS', 'lib');
       },
