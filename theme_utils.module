@@ -58,14 +58,14 @@ function theme_utils_settings() {
   $form['theme_utils_block_title_class'] = array(
     '#type' => 'checkbox',
     '#title' => t('Block title to class'),
-    '#default_value' => variable_get('theme_utils_block_title_class', 1),
+    '#default_value' => variable_get('theme_utils_block_title_class', TRUE),
     '#description' => t("Adds the block's title to the block's set of HTML classes. Useful when theming to quickly identify and target individual blocks."),
   );
 
   $form['theme_utils_region_body_class'] = array(
     '#type' => 'checkbox',
     '#title' => t('Regions to body class'),
-    '#default_value' => variable_get('theme_utils_region_body_class', 1),
+    '#default_value' => variable_get('theme_utils_region_body_class', TRUE),
     '#description' => t("Adds the page's active regions to the body element's list of HTML classes."),
   );
 
@@ -77,7 +77,7 @@ function theme_utils_settings() {
   }
   $form['theme_utils_media_query'] = array(
     '#type' => 'checkbox',
-    '#disabled' => $disabled ? 1 : 0,
+    '#disabled' => $disabled ? TRUE : FALSE,
     '#title' => t('Display @media query'),
     '#default_value' => variable_get('theme_utils_media_query', !$disabled),
     '#description' => t('Displays the active @media query in the browser window.') . '<br />' . $error_msg,
@@ -86,7 +86,7 @@ function theme_utils_settings() {
   $form['theme_utils_viewport_dimensions'] = array(
     '#type' => 'checkbox',
     '#title' => t('Display viewport dimensions'),
-    '#default_value' => variable_get('theme_utils_viewport_dimensions', 1),
+    '#default_value' => variable_get('theme_utils_viewport_dimensions', TRUE),
     '#description' => t("Displays the viewport's dimensions in the browser window."),
   );
 
@@ -110,7 +110,7 @@ function theme_utils_settings() {
  * Extend block's HTML classes with the block's title.
  */
 function theme_utils_preprocess_block(&$vars) {
-  if ($setting = variable_get('theme_utils_block_title_class', 1)) {
+  if ($setting = variable_get('theme_utils_block_title_class', TRUE)) {
     ctools_include('cleanstring', 'ctools', 'includes');
 
     $block = $vars['block'];
@@ -142,7 +142,7 @@ function theme_utils_preprocess_block(&$vars) {
  * Extend body's HTML classes with regions in use on a given page.
  */
 function theme_utils_preprocess_html(&$vars) {
-  if ($setting = variable_get('theme_utils_region_body_class', 1)) {
+  if ($setting = variable_get('theme_utils_region_body_class', TRUE)) {
     if (isset($vars['page'])) {
       foreach ($vars['page'] as $region) {
         if (is_array($region) && isset($region['#region'])) {
@@ -163,7 +163,7 @@ function theme_utils_page_build(&$page) {
   $should_attach = FALSE;
 
   // Media queries.
-  if (variable_get('theme_utils_media_query', 1)) {
+  if (variable_get('theme_utils_media_query', TRUE)) {
     if ($media_queries = theme_utils_get_media_queries()) {
       $css = '';
       $js = '';
@@ -189,7 +189,7 @@ function theme_utils_page_build(&$page) {
   }
 
   // Viewport dimensions.
-  if (variable_get('theme_utils_viewport_dimensions', 1)) {
+  if (variable_get('theme_utils_viewport_dimensions', TRUE)) {
     $setting['themeUtils']['browserViewport'] = array(
       'show' => 'true',
     );
@@ -244,7 +244,7 @@ function theme_utils_get_media_queries() {
       }
 
       // Store for 1 hour.
-      cache_set($cid, $media_queries, 'cache', time() + (60 * 60));
+      cache_set($cid, $media_queries, 'cache', REQUEST_TIME + (60 * 60));
     }
 
     return $media_queries;
